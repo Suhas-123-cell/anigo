@@ -1,0 +1,16 @@
+{
+  "name": "anigo",
+  "version": "1.0.0",
+  "description": "AniGO - Location-based AR Anime Game",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w backend\" \"npm run start -w frontend\"",
+    "backend": "npm run dev -w backend",
+    "frontend": "npm run start -w frontend",
+    "tunnel": "npm run start -- --tunnel -w frontend"
+  }
+}

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniGO Admin - Spawn Points</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0c0c12;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: #1a1a24;
+            border-right: 1px solid #333;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #1a1a24;
+            padding: 16px 20px;
+            border-bottom: 1px solid #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ff3b30;
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .spawn-zone {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #252530;
+            border-radius: 8px;
+            border-left: 3px solid #ff3b30;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .spawn-zone:hover {
+            background: #2d2d38;
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2);
+        }
+
+        .spawn-zone.active {
+            background: #2d2d38;
+            box-shadow: 0 0 16px rgba(255, 59, 48, 0.4);
+        }
+
+        .spawn-zone h3 {
+            color: #ff3b30;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .spawn-zone p {
+            font-size: 12px;
+            color: #999;
+            margin: 4px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #252530;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ff3b30;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .active-spawns {
+            margin-top: 20px;
+        }
+
+        .active-spawns h4 {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .spawn-entry {
+            background: #1f1f28;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 3px solid #4a9eff;
+            font-size: 11px;
+        }
+
+        .spawn-entry-char {
+            color: #4a9eff;
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .spawn-entry-rarity {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 6px;
+            background: #2a2a35;
+            border-radius: 3px;
+            margin: 4px 0;
+            margin-right: 8px;
+        }
+
+        .spawn-entry-location {
+            color: #888;
+            font-size: 10px;
+            margin: 4px 0;
+        }
+
+        .spawn-entry-coords {
+            font-family: 'Monaco', 'Courier New', monospace;
+            color: #90ee90;
+            font-size: 11px;
+            margin-top: 6px;
+            padding: 6px;
+            background: #0f0f14;
+            border-radius: 2px;
+            border-left: 2px solid #90ee90;
+        }
+
+        .rarity-common {
+            color: #90ee90;
+        }
+
+        .rarity-rare {
+            color: #87ceeb;
+        }
+
+        .rarity-legendary {
+            color: #ffd700;
+        }
+
+        .rarity-black {
+            color: #ff1493;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 12px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a24;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="zoneCount">0</div>
+                    <div class="stat-label">Zones</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="spawnCount">0</div>
+                    <div class="stat-label">Active</div>
+                </div>
+            </div>
+
+            <div id="spawnZones"></div>
+
+            <div class="active-spawns" id="activeSpawns" style="display: none;">
+                <h4>Active Spawns</h4>
+                <div id="spawnList"></div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="header">
+                <h1>🗺️ AniGO Spawn Points Dashboard</h1>
+            </div>
+            <div id="mapContainer" style="display: flex; align-items: center; justify-content: center; flex: 1; color: #888;">
+                <div class="loading">Spawn zones will display here (requires Mapbox token)</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let spawnZones = [];
+        let activeSpawns = [];
+
+        // Function to load spawn zones
+        async function loadSpawnZones() {
+            try {
+                // Get spawn zones from active spawns by grouping
+                const response = await fetch(`${API_BASE}/spawns`);
+                const data = await response.json();
+                spawnZones = [];
+                
+                // Group spawns by locationName to show zones
+                const zoneMap = {};
+                if (data.spawns) {
+                    data.spawns.forEach(spawn => {
+                        if (!zoneMap[spawn.locationName]) {
+                            zoneMap[spawn.locationName] = [];
+                        }
+                        zoneMap[spawn.locationName].push(spawn);
+                    });
+                }
+                
+                // Convert to array
+                spawnZones = Object.entries(zoneMap).map(([name, spawns]) => ({
+                    name,
+                    spawns,
+                    center: spawns.length > 0 ? {
+                        lat: spawns.reduce((sum, s) => sum + s.lat, 0) / spawns.length,
+                        lng: spawns.reduce((sum, s) => sum + s.lng, 0) / spawns.length,
+                    } : { lat: 0, lng: 0 }
+                }));
+                
+                renderSpawnZones();
+                document.getElementById('zoneCount').textContent = spawnZones.length;
+            } catch (error) {
+                console.error('Error loading spawn zones:', error);
+                document.getElementById('spawnZones').innerHTML = '<div class="loading">Failed to load spawn zones</div>';
+            }
+        }
+
+        // Function to load active spawns
+        async function loadActiveSpawns() {
+            try {
+                const response = await fetch(`${API_BASE}/spawns`);
+                const data = await response.json();
+                activeSpawns = data.spawns || [];
+                renderActiveSpawns();
+                document.getElementById('spawnCount').textContent = activeSpawns.length;
+            } catch (error) {
+                console.error('Error loading active spawns:', error);
+                console.log('Failed to fetch spawns');
+            }
+        }
+
+        // Render spawn zones in sidebar
+        function renderSpawnZones() {
+            const container = document.getElementById('spawnZones');
+            if (spawnZones.length === 0) {
+                container.innerHTML = '<div class="loading">No spawn zones configured</div>';
+                return;
+            }
+
+            container.innerHTML = spawnZones.map((zone, idx) => `
+                <div class="spawn-zone">
+                    <h3>${zone.name}</h3>
+                    <p>Center: ${zone.center.lat.toFixed(4)}, ${zone.center.lng.toFixed(4)}</p>
+                    <p>Spawns: ${zone.spawns.length}</p>
+                </div>
+            `).join('');
+        }
+
+        // Render active spawns
+        function renderActiveSpawns() {
+            const container = document.getElementById('spawnList');
+            const section = document.getElementById('activeSpawns');
+
+            if (activeSpawns.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = activeSpawns.slice(0, 15).map(spawn => `
+                <div class="spawn-entry">
+                    <div class="spawn-entry-char">🎭 ${spawn.character}</div>
+                    <div>
+                        <span class="spawn-entry-rarity rarity-${spawn.rarity}">${spawn.rarity.toUpperCase()}</span>
+                        <span class="spawn-entry-location">${spawn.locationName}</span>
+                    </div>
+                    <div class="spawn-entry-coords">
+                        📍 ${spawn.lat.toFixed(6)}, ${spawn.lng.toFixed(6)}
+                    </div>
+                </div>
+            `).join('');
+
+            if (activeSpawns.length > 15) {
+                container.innerHTML += `<div class="loading">+ ${activeSpawns.length - 15} more spawns</div>`;
+            }
+        }
+
+        // Refresh data every 5 seconds
+        async function refresh() {
+            await loadSpawnZones();
+            await loadActiveSpawns();
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            refresh();
+            setInterval(refresh, 5000);
+        });
+    </script>
+</body>
+</html>
